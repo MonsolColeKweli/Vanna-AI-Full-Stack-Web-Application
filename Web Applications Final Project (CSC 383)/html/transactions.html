@@ -1,0 +1,353 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <link href="transactions.css" rel="stylesheet">
+
+    <style>
+        .loader {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .sql-details, .nlq-details, .data-details {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6; 
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap; 
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px; 
+        }
+        .transaction-detail h6 {
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar"></div>
+
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Transaction History</h4>
+                        <p class="text-muted mb-0">Look through your past queries and interactions.</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <label for="dateFilter" class="form-label">Filter by Date:</label>
+                                <input type="date" id="dateFilter" class="form-control">
+                            </div>
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <label for="recordLimit" class="form-label">Records per Page:</label>
+                                <select id="recordLimit" class="form-select">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="-1">All</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3 mb-md-0 d-flex align-items-end">
+                                <button id="clearFilters" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-times me-2"></i>Clear Filters
+                                </button>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button id="refreshData" class="btn btn-primary w-100">
+                                    <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="loader" id="dataLoader">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading transaction data...</p>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="transactionTable" class="table table-striped table-hover" style="width:100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Natural Language Query</th>
+                                        <th>SQL Query</th>
+                                        <th>Data Preview</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="noRecordsMessage" class="alert alert-info text-center d-none">
+                            No transaction records found for the selected criteria.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="transactionDetailModal" tabindex="-1" aria-labelledby="transactionDetailModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="transactionDetailModalLabel">Transaction Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="transactionDetailContent">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+    $(document).ready(function () {
+        const defaultDate = new Date().toISOString().split('T')[0];
+        loadNavbar();
+        $('#dateFilter').val(defaultDate);
+        
+        let initialPageLength = parseInt($('#recordLimit').val(), 10);
+        if (isNaN(initialPageLength) || (initialPageLength <= 0 && initialPageLength !== -1)) {
+            initialPageLength = 25; 
+        }
+
+        let transactionTable = $('#transactionTable').DataTable({
+            ordering: true,
+            searching: true,
+            paging: true,
+            pageLength: initialPageLength,
+            lengthChange: false,
+            columns: [ 
+                { data: "timestamp", width: "15%" },
+                { data: "natural_language_query_formatted", width: "25%" }, 
+                { data: "sql_query_formatted", width: "25%" }, 
+                { data: "query_response_formatted", width: "20%" }, 
+                { data: "actions", width: "15%", orderable: false, searchable: false } 
+            ],
+            language: { 
+                emptyTable: "No transactions to show right now.",
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                infoEmpty: "Showing 0 to 0 of 0 entries",
+                infoFiltered: "(filtered from _MAX_ total entries)",
+                loadingRecords: "Just a moment, loading...",
+                zeroRecords: "Sorry, no transactions match your search.",
+                paginate: {
+                    first: "First",
+                    last: "Last",
+                    next: "Next",
+                    previous: "Previous"
+                }
+            },
+            deferRender: true 
+        });
+
+        loadTransactionData();
+
+        $('#refreshData').on('click', loadTransactionData);
+        $('#clearFilters').on('click', function() {
+            $('#dateFilter').val(defaultDate); 
+            $('#recordLimit').val("25"); 
+            transactionTable.page.len(25).draw(); // Apply page length and redraw
+            loadTransactionData(); // Reload data with default filters
+        });
+        $('#dateFilter, #recordLimit').on('change', loadTransactionData);
+
+        $('#transactionTableBody').on('click', '.view-details', function() {
+            const entryId = $(this).data('id').toString(); 
+            // Find from the original full dataset for modal details
+            const entryData = window.cachedLogData.find(entry => entry.id.toString() === entryId);
+
+            if (entryData) {
+                showTransactionDetails(entryData); 
+            } else {
+                console.error('Could not find data for entry ID:', entryId);
+                $('#transactionDetailContent').html('<p class="text-danger">Oops! We could not load the details for this transaction.</p>');
+                const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
+                modal.show();
+            }
+        });
+
+        function loadNavbar() {
+            $.ajax({
+                url: 'navbar.html', 
+                method: 'GET',
+                dataType: 'html'
+            })
+            .done(function (data) {
+                $('#navbar').html(data); 
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+                console.error('Navbar loading failed:', textStatus, errorThrown);
+                $('#navbar').html('<div class="alert alert-danger m-3">The navigation bar couldn\'t be loaded. Please try refreshing.</div>');
+            });
+        }
+
+        window.cachedLogData = [];
+
+        function loadTransactionData() {
+            const selectedDateFilter = $('#dateFilter').val();
+            const selectedLimit = $('#recordLimit').val(); 
+            
+            let newPageLength = parseInt(selectedLimit, 10);
+            if (isNaN(newPageLength) || (newPageLength <= 0 && newPageLength !== -1)) {
+                newPageLength = 25; 
+            }
+            if (transactionTable.page.len() !== newPageLength) {
+                transactionTable.page.len(newPageLength);
+            }
+
+            $('#dataLoader').show(); 
+            $('#noRecordsMessage').addClass('d-none'); 
+            transactionTable.clear().draw(); 
+
+            $.ajax({
+                url: 'final.php/getLog/', 
+                type: 'GET',
+                dataType: 'json'
+            })
+            .done(function(response) {
+                $('#dataLoader').hide(); 
+
+                if (response && response.status === 0) {
+                    const rawLogData = Array.isArray(response.message) ? response.message : [];
+                    window.cachedLogData = rawLogData; // Cache the full dataset
+
+                    let dataToDisplay = rawLogData;
+
+                    // Filter data by the selected date if a date is chosen
+                    if (selectedDateFilter) {
+                        dataToDisplay = rawLogData.filter(entry => {
+                            if (!entry.timestamp) return false;
+                            const entryDate = entry.timestamp.split(' ')[0];
+                            return entryDate === selectedDateFilter;
+                        });
+                    }
+
+                    if (dataToDisplay.length === 0) {
+                        $('#noRecordsMessage').removeClass('d-none');
+                        if (selectedDateFilter && rawLogData.length > 0) {
+                             $('#noRecordsMessage').text('No transaction records found for the selected date.');
+                        } else if (rawLogData.length === 0) {
+                            $('#noRecordsMessage').text('No transactions to show right now.');
+                        } else {
+                            $('#noRecordsMessage').text('No transaction records found for the selected criteria.');
+                        }
+                    } else {
+                        $('#noRecordsMessage').addClass('d-none'); 
+                        const processedData = dataToDisplay.map(entry => ({
+                            id: entry.id, 
+                            timestamp: entry.timestamp || 'N/A',
+                            natural_language_query_formatted: truncateText(entry.natural_query || 'N/A', 60),
+                            sql_query_formatted: truncateText(entry.query || 'N/A', 60), 
+                            query_response_formatted: formatQueryResponseForTable(entry.query_response),
+                            actions: `<button class="btn btn-sm btn-info view-details" data-id="${entry.id}"><i class="fas fa-eye me-1"></i>View</button>`,
+                            // Full data for modal:
+                            natural_language_query: entry.natural_query,
+                            sql_query: entry.query, 
+                            query_response: entry.query_response 
+                        }));
+                        transactionTable.rows.add(processedData).draw(false); 
+                    }
+                } else {
+                    let errorMessage = 'Error loading transaction data.';
+                    if (response && response.message) {
+                        errorMessage += ' ' + response.message;
+                    }
+                    $('#noRecordsMessage').removeClass('d-none').text(errorMessage);
+                    // transactionTable.clear().draw(); // Already cleared
+                    console.error('API Error:', response ? response.message : 'Unknown API error.');
+                }
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                $('#dataLoader').hide();
+                $('#noRecordsMessage').removeClass('d-none').text('Failed to load transaction data: ' + textStatus + '. Please check your connection or try again.');
+                // transactionTable.clear().draw(); // Already cleared
+                console.error('AJAX request failed:', textStatus, errorThrown, jqXHR.responseText);
+            });
+        }
+
+        function truncateText(text, maxLength) {
+            if (typeof text !== 'string') text = String(text);
+            if (text.length <= maxLength) return text;
+            return text.substr(0, maxLength) + '...';
+        }
+
+        function formatQueryResponseForTable(queryResponse) {
+            if (!queryResponse) return 'N/A';
+            try {
+                const jsonData = JSON.parse(queryResponse);
+                if (Array.isArray(jsonData) && jsonData.length > 0) {
+                    if (typeof jsonData[0] === 'object' && jsonData[0] !== null) {
+                        const firstKey = Object.keys(jsonData[0])[0];
+                        if (firstKey) {
+                            return truncateText(`${firstKey}: ${jsonData[0][firstKey]}`, 50) + (jsonData.length > 1 ? ` (+${jsonData.length -1} more)`: '');
+                        }
+                    }
+                    return `Array (${jsonData.length} items)`;
+                } else if (typeof jsonData === 'object' && jsonData !== null) {
+                    const firstKey = Object.keys(jsonData)[0];
+                    if(firstKey) return truncateText(`${firstKey}: ${jsonData[firstKey]}`, 50);
+                }
+                return truncateText(queryResponse, 50); 
+            } catch (e) {
+                return truncateText(String(queryResponse), 50); 
+            }
+        }
+
+        function showTransactionDetails(entry) {
+            let detailContent = '<div class="transaction-detail">';
+            detailContent += '<h6>Timestamp</h6>';
+            detailContent += '<p>' + (entry.timestamp || 'N/A') + '</p>';
+
+            if (entry.natural_query) {
+                detailContent += '<h6>Natural Language Query</h6>';
+                detailContent += '<div class="nlq-details">' + (entry.natural_query) + '</div>';
+            }
+
+            detailContent += '<h6>SQL Query</h6>';
+            detailContent += '<pre class="sql-details"><code>' + (entry.query || 'N/A') + '</code></pre>';
+
+            detailContent += '<h6>Query Response</h6>';
+            try {
+                const jsonData = JSON.parse(entry.query_response);
+                detailContent += '<pre class="data-details"><code>' + JSON.stringify(jsonData, null, 2) + '</code></pre>';
+            } catch (e) {
+                detailContent += '<div class="data-details">' + (entry.query_response || 'N/A') + '</div>';
+            }
+            detailContent += '</div>';
+
+            $('#transactionDetailContent').html(detailContent);
+            const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
+            modal.show();
+        }
+    });
+</script>
+</body>
+</html>

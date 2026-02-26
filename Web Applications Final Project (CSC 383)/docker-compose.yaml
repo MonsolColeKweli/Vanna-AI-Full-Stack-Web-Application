@@ -1,0 +1,39 @@
+services:
+  php:
+    container_name: www
+    build: ./
+    ports:
+      - 4000:80
+      - 443:443
+    volumes:
+      - ./html:/var/www/html/
+      - ./password:/var/www/password/
+      - ./mycert.crt:/etc/ssl/certs/mycert.crt
+      - ./mycert.key:/etc/ssl/private/mycert.key
+  vanna:
+    container_name: vanna
+    build: 
+      context: ./app
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_DB: ${MYSQL_DB}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./app/ddl:/app/ddl
+      # - vanna-training:/app/training
+      - vanna:/app
+    ports:
+      - "5000:5000"
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+
+volumes:
+  vanna:
+
+

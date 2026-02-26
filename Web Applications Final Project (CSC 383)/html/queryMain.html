@@ -1,0 +1,276 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanna API Final Project</title>
+
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+    integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="queryMain.css">
+    <title>Natural Language Database Query Interface</title>
+</head>
+
+<body>
+    <!--Navbar implementation-->
+    <div id="navbar"></div>
+
+    <!--Navbar Script-->
+    <script>
+        $(document).ready(function () {
+            loadNavbar(); // Call the function to load the navbar
+        });
+        function loadNavbar() {
+            // Load the navbar HTML file using AJAX
+            $.ajax({
+                url: 'navbar.html', //file rewuest via ajax
+                method: 'GET', // HTTP method for request
+                dataType: 'html' // Expecting HTML response
+            })
+                .done(function (data) { // On success, load the navbar content
+                    $('#navbar').html(data);
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) { // On failure, log the error
+                    console.error('Failed to load navbar:', textStatus);
+                    $('#navbar').html('<div class="alert alert-danger">Failed to load navigation bar.</div>');
+                });
+        }
+    </script>
+
+    <!--Front End <<USER INTERFACE>>-->
+    <div class="container">
+        <header>
+            <h1>Natural Language Database Query Interface</h1>
+            <p class="description">
+                Ask questions about your database in plain English. Our system will translate your
+                natural language query into SQL and return the results.
+            </p>
+        </header>
+
+        <div class="query-card">
+            <form id="queryForm" class="query-form">
+                <div class="form-group">
+                    <label for="naturalQuery">Your Question:</label>
+                    <textarea id="naturalQuery"
+                        placeholder="e.g., Show me the top 10 customers by order total"></textarea>
+                </div>
+
+                <!--<<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FIX THIS!!!!!!!!!!!!!!!!!!!!!>>-->
+                <div class="query-examples">
+                    <div class="example-title">Example Queries:</div>
+                    <ul class="example-list">
+                        <li class="example-query">How many customers are in New Jersey</li>
+                        <li class="example-query">How many customer are only in Illinois</li>
+                        <li class="example-query">How many people in Illinois are customers who bought the product?</li>
+                        <li class="example-query">total number of stores</li>
+                    </ul>
+                </div>
+
+                <div class="buttons">
+                    <button type="submit" class="btn btn-primary">Submit Query</button>
+                    <button type="button" id="clearBtn" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+        </div>
+        <!--
+       <div id="loading-indicator">
+            <div class="spinner"></div>
+            <p>Processing your query...</p>
+        </div>
+-->
+        <div id="result-container" class="result-card">
+            <div class="result-header">
+                <h2 class="result-title">Query Results</h2>
+                <span id="result-timestamp" class="timestamp">May 7, 2025 12:34 PM</span>
+            </div>
+
+            <div id="error-message" class="error-message" style="display: none;">
+                Error processing your query. Please try rephrasing or check your input.
+            </div>
+
+
+            <!--<<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FIX THIS!!!!!!!!!!!!!!!!!!!!!>>-->
+            <div id="result-content">
+                <div class="sql-query-section">
+                    <!--Should display SQL Code-->
+                    <h3>Generated SQL Query:</h3>
+                    <pre id="sql-query" class="sql-query"></pre>
+                </div>
+
+                <div class="data-table-container">
+                    <h3>Results:</h3>
+                    <div id="table-container"></div>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const queryForm = document.getElementById('queryForm');
+            const naturalQuery = document.getElementById('naturalQuery');
+            const clearBtn = document.getElementById('clearBtn');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const resultContainer = document.getElementById('result-container');
+            const sqlQuery = document.getElementById('sql-query');
+            const tableContainer = document.getElementById('table-container');
+            const resultTimestamp = document.getElementById('result-timestamp');
+            const errorMessage = document.getElementById('error-message');
+            const historyList = document.getElementById('history-list');
+            const exampleQueries = document.querySelectorAll('.example-query');
+
+            // Example queries click event
+            exampleQueries.forEach(example => {
+                example.addEventListener('click', () => {
+                    naturalQuery.value = example.textContent;
+                    naturalQuery.focus();
+                });
+            });
+
+            // Clear button functionality
+            clearBtn.addEventListener('click', () => {
+                naturalQuery.value = '';
+                naturalQuery.focus();
+            });
+
+            // Form submission
+            queryForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const query = naturalQuery.value.trim();
+                if (!query) {
+                    alert('Please enter a query');
+                    return;
+                }
+
+                // Show loading indicator
+                //loadingIndicator.style.display = 'block';
+                // resultContainer.style.display = 'none';
+                // errorMessage.style.display = 'none';
+                processQuery(query)
+            });
+            //          <!--<<!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FIX THIS!!!!!!!!!!!!!!!!!!!!!>>-->
+            // Process query through Vanna backend via PHP server
+            function processQuery(query) {
+                const vannaEndpoint = 'final.php/runQuery/';
+
+                $.ajax({
+                    url: vannaEndpoint,
+                    method: 'GET', // 'type' is an alias for 'method' in older jQuery, 'method' is preferred
+                    dataType: 'json', // Automatically parses the JSON response
+                    data: { query: query }, // jQuery will automatically URL-encode this for 'application/x-www-form-urlencoded'
+                    timeout: 30000 // Example: 30 second timeout
+                })
+                    .done(function (jsonResponse, textStatus, jqXHR) {
+                        console.log("JSON response: " + JSON.stringify(jsonResponse))
+                        if (jsonResponse.status !== 0) {
+                            const errorMessage = jsonResponse.message || 'Unknown error from Vanna backend (custom status)';
+                            console.error('Vanna API Error:', errorMessage, jsonResponse);
+                            deferred.reject(errorMessage); // Reject the promise with Vanna's error message
+                            return;
+                        }
+                        displayResults(jsonResponse)
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+                        // This 'fail' callback is triggered for HTTP errors (e.g., 404, 500) or other AJAX failures like timeouts or parse errors
+                        let errorMessage = 'Failed to communicate with the Vanna backend';
+
+                        if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
+                            // If the server sent a JSON error response for a 4xx/5xx status
+                            errorMessage = jqXHR.responseJSON.message;
+                        } else if (jqXHR.status) {
+                            errorMessage = `Server responded with status: ${jqXHR.status} (${errorThrown || textStatus})`;
+                        } else if (textStatus === 'parsererror') {
+                            errorMessage = 'Error parsing JSON response from server.';
+                        } else if (textStatus === 'timeout') {
+                            errorMessage = 'The request to Vanna backend timed out.';
+                        } else if (errorThrown) {
+                            errorMessage = `AJAX Error: ${errorThrown}`;
+                        }
+
+                        console.error('AJAX Communication Error:', errorMessage, { status: jqXHR.status, textStatus, errorThrown });
+                    });
+            }
+            // Display results in the UI
+            function displayResults(response) {
+                // Show SQL query
+                console.log("Full response object:", response);
+                if (typeof sqlQuery !== 'undefined' && sqlQuery) {
+                    sqlQuery.textContent = response.SQL_TEXT;
+                }
+
+                // Clear previous results
+                if (typeof tableContainer !== 'undefined' && tableContainer) {
+                    tableContainer.innerHTML = '';
+                } else {
+                    console.error("tableContainer DOM element not found!");
+                    return;
+                }
+
+                if (response.response && response.response.length > 0) {
+                    const table = document.createElement('table');
+                    table.className = 'data-table';
+
+                    // Create table header (<thead>)
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+
+                    // First header cell for the "Key" column
+                    const keyHeaderCell = document.createElement('th');
+                    keyHeaderCell.textContent = 'Attribute';
+                    headerRow.appendChild(keyHeaderCell);
+
+                    // Subsequent header cells for each record/value column
+                    response.response.forEach((record, index) => {
+                        const valueHeaderCell = document.createElement('th');
+                        valueHeaderCell.textContent = `Record`;
+                        headerRow.appendChild(valueHeaderCell);
+                    });
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    // Create table body (<tbody>)
+                    const tbody = document.createElement('tbody');
+                    const keys = Object.keys(response.response[0]); 
+
+                    keys.forEach(key => {
+                        const dataRow = document.createElement('tr');
+
+                        const keyNameCell = document.createElement('th'); 
+                        keyNameCell.scope = "row";
+                        keyNameCell.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        dataRow.appendChild(keyNameCell);
+                        response.response.forEach(record => {
+                            const valueCell = document.createElement('td');
+                            valueCell.textContent = record[key];
+                            dataRow.appendChild(valueCell);
+                        });
+                        tbody.appendChild(dataRow);
+                    });
+
+                    table.appendChild(tbody);
+                    tableContainer.appendChild(table);
+
+                } else {
+                    tableContainer.innerHTML = '<p>No results found for your query.</p>';
+                }
+
+                // Show result container
+                if (typeof resultContainer !== 'undefined' && resultContainer) {
+                    resultContainer.style.display = 'block';
+                }
+                const resultContentEl = document.getElementById('result-content');
+                if (resultContentEl) {
+                    resultContentEl.style.display = 'block';
+                }
+            }
+        });
+    </script>
+</body>
