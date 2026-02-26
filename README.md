@@ -1,5 +1,5 @@
 # Vanna AI Full-Stack Web Application  
-**CSE 383 – Final Project**
+**CSE 383 (Web Application Programming) – Final Project**
 
 ## Overview  
 
