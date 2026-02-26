@@ -1,128 +1,158 @@
-# Dockerized Portfolio Web Application  
-**CEC 383 – Web Applications Final Project**
+# Vanna AI Full-Stack Web Application  
+**CSE 383 – Final Project**
 
 ## Overview  
 
-This project is a full-stack web application consisting of a **Dockerized backend server** connected to a **frontend portfolio interface**. The application demonstrates RESTful communication between client and server, responsive UI design using Bootstrap, and structured team-based development through sprint check-ins.
+For our final project in CSE 383, we developed a responsive, full-stack web application from scratch that enables users to query structured databases using natural language. The system integrates modern AI and web technologies, with the Vanna API serving as the core intelligence behind the query engine.
 
-The project was completed in collaboration with Cody Schafer, with sprint check-ins held every other week to review progress, resolve blockers, and plan upcoming tasks.
+The primary goal of the project was to design and implement a modern web application that translates plain English questions into precise SQL queries, retrieves structured data from a MySQL database, and presents the results dynamically to users.
+
+The entire system was containerized using Docker and deployed on a personal OpenStack instance. While some live features are currently unavailable due to the OpenStack server being offline, the system itself was fully implemented and operational at the time of deployment.
+
+---
+
+## Project Objectives  
+
+- Build a modern, responsive full-stack web application from scratch  
+- Integrate AI-powered natural language querying using the Vanna API  
+- Develop a PHP-based backend server for application logic  
+- Containerize all services using Docker  
+- Deploy and manage infrastructure through OpenStack  
+- Log and track all user interactions  
+- Ensure full end-to-end functionality across all components  
 
 ---
 
-## Project Architecture  
-
-The application follows a standard full-stack architecture:
-
-Frontend (Portfolio UI)  
-⬇ REST API Requests  
-Backend Server (Docker Container)  
-
-### Backend  
-- Runs inside a Docker container  
-- Exposes RESTful API endpoints  
-- Handles HTTP requests from the frontend  
-- Processes and returns JSON responses  
-- Implements structured server-side error handling  
-
-Containerizing the backend ensures:
-- Consistent development environments  
-- Simplified setup and deployment  
-- Reproducible builds across systems  
-
----
+## Technology Stack  
 
 ### Frontend  
 
-The frontend is a basic portfolio-style web interface that communicates with the backend via REST API calls.
+- **HTML & CSS** – Structure and styling  
+- **JavaScript** – Client-side logic and dynamic rendering  
+- **Bootstrap** – Responsive layout and modern UI components  
+- **jQuery & AJAX** – Asynchronous communication with the backend  
 
-#### Technologies Used
-- **JavaScript** – Handles API requests, dynamic rendering, and client-side logic  
-- **Bootstrap** – Provides responsive layout and clean UI components  
-
-Bootstrap enabled:
-- Grid-based responsive layouts  
-- Consistent spacing and styling  
-- Prebuilt UI components for faster development  
-
-JavaScript was used for:
-- Making asynchronous REST API calls  
-- Handling JSON responses  
-- Updating the DOM dynamically  
-- Managing client-side error handling  
+We spent significant time planning and refining the user interface to ensure responsiveness, clarity, and smooth interaction across devices. Bootstrap’s grid system and component library enabled efficient layout development, while JavaScript and AJAX powered real-time updates without requiring full page reloads.
 
 ---
 
-## REST API Integration  
+### Backend  
 
-The frontend and backend communicate using REST principles:
+- **PHP** – Used to build the backend REST server  
+- **Python** – Used within the Vanna backend integration  
+- **Apache Web Server** – Hosted backend services  
+- **SQLite** – Stored transaction history logs  
+- **MySQL** – Queried via AI-generated SQL  
 
-- Use of HTTP methods (e.g., GET, POST where applicable)  
-- JSON-formatted request and response bodies  
-- Route-based endpoint structure  
+We implemented a PHP-based REST server responsible for:
 
-The frontend sends asynchronous requests to backend endpoints and dynamically renders the returned data. Proper separation of concerns was maintained between UI logic and server-side processing.
+- Processing frontend requests  
+- Managing communication between services  
+- Logging user queries and responses  
+- Returning structured data to the client  
 
----
-
-## Error Handling  
-
-Error handling was implemented on both sides of the application.
-
-### Backend
-- Validates incoming requests  
-- Returns appropriate HTTP status codes  
-- Sends structured JSON error responses  
-
-### Frontend
-- Catches failed API requests  
-- Prevents UI crashes  
-- Displays user-facing feedback when errors occur  
-
-This approach improved application stability and debugging efficiency during development.
+The backend was carefully designed to ensure reliable communication between the frontend interface, the logging system, and the Vanna-powered query engine.
 
 ---
 
-## Development Process  
+## Vanna API Integration  
 
-This project was developed using a structured sprint approach.
+The central feature of the application is its integration with the Vanna API.
 
-- Sprint check-ins every week  
-- Task planning and milestone setting  
-- Integration testing between frontend and backend  
-- Iterative refinement and bug resolution  
+User workflow:
 
-Working in sprints reinforced collaboration, accountability, and incremental progress, simulating a real-world agile workflow.
+1. A user enters a natural language question through the web interface.
+2. The request is sent to the backend via AJAX.
+3. The backend communicates with the Vanna service.
+4. Vanna converts the natural language input into SQL.
+5. The database is queried.
+6. Structured results are returned and rendered dynamically.
+7. The interaction is logged into a SQLite database.
 
----
-
-## Key Concepts Demonstrated  
-
-- Docker containerization  
-- Backend server setup and configuration  
-- REST API design and integration  
-- JavaScript-based asynchronous communication  
-- Responsive UI development with Bootstrap  
-- Client-side and server-side error handling  
-- Sprint-based collaborative development  
+This architecture makes structured data querying accessible to users without requiring SQL knowledge.
 
 ---
 
-## Learning Outcomes  
+## Docker & OpenStack Deployment  
 
-Through this project, I strengthened my understanding of:
+All system components were containerized using Docker, including:
 
-- How full-stack applications are structured  
-- How frontend and backend systems communicate  
-- The value of containerization for consistent environments  
-- The importance of clean API design  
-- Building responsive and user-friendly interfaces  
-- Working collaboratively through structured sprint cycles  
+- Apache web server  
+- PHP backend server  
+- Vanna backend  
 
-This project represents practical, hands-on experience building and integrating a containerized backend with a responsive frontend using modern web development practices.
+The containers were deployed and managed on a personal OpenStack instance. This provided hands-on experience with:
+
+- Cloud-based infrastructure management  
+- Containerized service orchestration  
+- Environment configuration and networking  
+
+Although the OpenStack server is currently offline, the full system was deployed and functioning during the final implementation phase.
+
+---
+
+## Application Structure  
+
+The application consists of five main sections:
+
+1. Landing page  
+2. Team member page (Partner)  
+3. Team member page (My contributions & learning reflection)  
+4. AI-powered query interface  
+5. Searchable transaction history log  
+
+### Team Member & Reflection Pages  
+
+These pages outline individual contributions, technical responsibilities, and key learning experiences throughout the project, including system design, backend implementation, deployment configuration, and frontend development.
+
+---
+
+## Interaction & Logging System  
+
+All user queries are processed in real time and logged through the student-built PHP backend into a SQLite database. The history page allows users to search and review previous interactions, ensuring full traceability within the system.
+
+This logging mechanism demonstrates structured data handling and backend persistence within a containerized environment.
+
+---
+
+## Development Timeline  
+
+### Project Inception  
+Initial research and planning of core system functionality and AI integration goals.
+
+### Architecture Design  
+Defined system structure, container layout, service communication, and database strategy.
+
+### MVP Development  
+Implemented core query functionality and established frontend-backend communication.
+
+### Testing & Refinement  
+Conducted integration testing, UI adjustments, backend debugging, and deployment verification.
+
+### Final Implementation  
+Deployed the fully integrated system on OpenStack with all planned features operational.
+
+We also conducted sprint check-ins every other week to evaluate progress, divide responsibilities, and ensure milestone completion.
+
+---
+
+## Key Learning Outcomes  
+
+- Building a full-stack web application from scratch  
+- Designing and implementing a PHP-based backend server  
+- Integrating AI-driven database querying systems  
+- Managing containerized services with Docker  
+- Deploying applications on OpenStack infrastructure  
+- Implementing structured logging systems  
+- Designing responsive and interactive user interfaces  
+- Collaborating through structured sprint cycles  
 
 ---
 
 ## Project Status  
 
-Completed as part of CEC 383 – Web Applications.  
-Development has concluded, but the project serves as a strong demonstration of full-stack architecture, Docker usage, REST API integration, and team-based workflow.
+Development has concluded. Some live functionality is currently unavailable due to the OpenStack server being offline. The architecture, implementation, and integration of all components were completed and fully operational during deployment.
+
+---
+
+This project demonstrates the ability to combine artificial intelligence, backend engineering, cloud infrastructure, containerization, and modern web development into a cohesive, fully integrated system.
