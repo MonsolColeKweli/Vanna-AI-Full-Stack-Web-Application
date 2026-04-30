@@ -1,6 +1,4 @@
 # Vanna AI Full-Stack Web Application  
-**CSE 383 (Web Application Programming) – Final Project**
-
 ## Overview  
 
 For our final project in CSE 383, we developed a responsive, full-stack web application from scratch that enables users to query structured databases using natural language. The system integrates modern AI and web technologies, with the Vanna API serving as the core intelligence behind the query engine.
