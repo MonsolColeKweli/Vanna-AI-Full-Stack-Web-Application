@@ -1,7 +1,7 @@
 # Vanna AI Full-Stack Web Application  
 ## Overview  
 
-For our final project in CSE 383, we developed a responsive, full-stack web application from scratch that enables users to query structured databases using natural language. The system integrates modern AI and web technologies, with the Vanna API serving as the core intelligence behind the query engine.
+When learning about Web Application Programming, I—alongside my friend Cody Schaefer—developed a responsive, full-stack web application from scratch that enables users to query structured databases using natural language. The system integrates modern AI and web technologies, with the Vanna API serving as the core intelligence behind the query engine.
 
 The primary goal of the project was to design and implement a modern web application that translates plain English questions into precise SQL queries, retrieves structured data from a MySQL database, and presents the results dynamically to users.
 
